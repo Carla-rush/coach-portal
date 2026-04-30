@@ -16,6 +16,7 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static('./src'));
 
 // 1. Get all data from the database
 app.get('/all', async (req: Request, res: Response) => {
