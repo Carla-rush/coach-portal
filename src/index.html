@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Coach Intelligence Portal</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background: #f0f2f5;
+        }
+
+        /* SIDEBAR & ENERGY BARS */
+        #sidebar {
+            width: 260px;
+            background: #1c1e21;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            background: #2c2f33;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .client-row {
+            padding: 12px;
+            margin: 8px 0;
+            background: #2c2f33;
+            border-radius: 8px;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .active-client {
+            border-left-color: #007bff;
+            background: #3e4247;
+        }
+
+        .days-ago {
+            font-size: 10px;
+            color: #8e9297;
+            margin-top: 2px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-critical {
+            background: #ff4d4f;
+            box-shadow: 0 0 8px rgba(255, 77, 79, 0.6);
+        }
+
+        .status-warning {
+            background: #faad14;
+        }
+
+        .status-healthy {
+            background: #52c41a;
+        }
+
+        .energy-bar-bg {
+            height: 4px;
+            width: 100%;
+            background: #444;
+            margin-top: 8px;
+            border-radius: 2px;
+        }
+
+        .energy-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+
+        #main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .card-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            flex: 1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .card h4 {
+            margin: 0;
+            color: #8c8c8c;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card small {
+            color: #bfbfbf;
+            font-size: 0.7rem;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            height: 250px;
+        }
+
+        /* COLORFUL FRICTION TAGS */
+        .tag {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 10px;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .tag-work {
+            background: #d46b08;
+            border: 1px solid #ffbb96;
+        }
+
+        .tag-social {
+            background: #096dd9;
+            border: 1px solid #91d5ff;
+        }
+
+        .tag-physical {
+            background: #cf1322;
+            border: 1px solid #ffa39e;
+        }
+
+        .tag-mental {
+            background: #722ed1;
+            border: 1px solid #d3adf7;
+        }
+
+        .tag-internal {
+            background: #531dab;
+            border: 1px solid #d3adf7;
+        }
+
+        .tactical-notes {
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .save-btn {
+            background: #faad14;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .delete-btn {
+            margin-top: auto;
+            background: none;
+            border: 1px solid #444;
+            color: #8c8c8c;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .delete-btn:hover {
+            border-color: #ff4d4f;
+            color: #ff4d4f;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" style="display: flex; width: 100%;">
+        <div id="sidebar">
+            <input type="text" v-model="searchQuery" class="search-input" placeholder="Search...">
+
+            <div v-for="client in filteredClients" @click="selectClient(client)"
+                :class="['client-row', { 'active-client': selectedClient?.name === client.name }]">
+
+                <div style="flex: 1;">
+                    <div style="text-transform: capitalize; font-weight: bold; font-size: 14px;">{{ client.name }}</div>
+                    <div class="days-ago">{{ client.daysSince === 0 ? 'Today' : client.daysSince + 'd ago' }}</div>
+                    <div class="energy-bar-bg">
+                        <div class="energy-bar-fill"
+                            :style="{ width: (client.recentEnergy * 20) + '%', background: getCol(client.recentEnergy) }">
+                        </div>
+                    </div>
+                </div>
+
+                <div :class="['status-dot', 'status-' + client.status]"></div>
+            </div>
+
+            <button v-if="selectedClient" class="delete-btn" @click="deleteClient">Offboard Client</button>
+        </div>
+
+        <div id="main" v-if="selectedClient">
+            <h1 style="text-transform: capitalize;">{{ selectedClient.name }}</h1>
+
+            <div class="chart-box"><canvas id="dualChart"></canvas></div>
+
+            <div class="card-row">
+                <div class="card">
+                    <h4>Energy</h4>
+                    <h2>{{ selectedClient.recentEnergy }}/5</h2>
+                    <small>Based on average of last 3 logs</small>
+                </div>
+                <div class="card">
+                    <h4>Satisfaction</h4>
+                    <h2>{{ selectedClient.recentSat }}/5</h2>
+                    <small>Based on average of last 3 logs</small>
+                </div>
+                <div class="card">
+                    <h4>Top Barrier</h4>
+                    <h2>{{ selectedClient.topBarrier }}</h2>
+                    <small>Most frequent friction category</small>
+                </div>
+            </div>
+
+            <div class="tactical-notes">
+                <h3>📝 Coach Plan</h3>
+                <textarea v-model="selectedClient.notes"
+                    style="width:100%; height:80px; margin-bottom:10px;"></textarea>
+                <button class="save-btn" @click="saveNotes">Update Strategy</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Energy</th>
+                        <th>Handling</th>
+                        <th>Category</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="e in selectedClient.entries">
+                        <td>{{ e.date }}</td>
+                        <td><strong>{{ e.energyLevel }}</strong></td>
+                        <td>{{ e.satisfaction }}</td>
+                        <td>
+                            <span v-if="e.frictionCat && e.frictionCat.toLowerCase() !== 'none'"
+                                :class="['tag', getTagClass(e.frictionCat)]">
+                                {{ e.frictionCat }}
+                            </span>
+                        </td>
+                        <td style="color: #666;">
+                            {{ e.frictionNote === 'Web Submission' ? '' : e.frictionNote }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        let chartInstance = null;
+
+        createApp({
+            data() { return { searchQuery: '', rawReflections: [], selectedClient: null } },
+            computed: {
+                filteredClients() {
+                    const groups = {};
+                    this.rawReflections.forEach(r => {
+                        const name = r.clientId.toLowerCase().trim();
+                        if (!groups[name]) groups[name] = { name, eT: 0, sT: 0, count: 0, entries: [], barriers: {} };
+                        groups[name].eT += Number(r.energyLevel);
+                        groups[name].sT += Number(r.satisfaction);
+                        groups[name].count++;
+                        groups[name].entries.push(r);
+                        const b = r.frictionCat || 'None';
+                        groups[name].barriers[b] = (groups[name].barriers[b] || 0) + 1;
+                    });
+
+                    const mapped = Object.values(groups).map(g => {
+                        const sorted = g.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+                        const recent = sorted.slice(-3);
+                        const recentEnergy = (recent.reduce((a, b) => a + Number(b.energyLevel), 0) / (recent.length || 1)).toFixed(1);
+
+                        // Priority Logic: Days since last submission
+                        const lastDate = new Date(sorted[sorted.length - 1].date);
+                        const today = new Date();
+                        // Calculate the gap (Today minus Last Submission)
+                        const diffTime = today - lastDate;
+
+                        // If the number is negative, the date is in the future. 
+                        // We use Math.max(0, ...) to force it to 0 so it doesn't show "203d ago"
+                        const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                        // Status Ranking
+
+                        let status = 'healthy';
+                        let priority = 3;
+
+                        if (diffDays >= 3 || Number(recentEnergy) <= 2.0) {
+                            status = 'critical';
+                            priority = 1;
+                        } else if (diffDays >= 1 || Number(recentEnergy) <= 3.5) {
+                            status = 'warning';
+                            priority = 2;
+                        }
+
+                        return {
+                            name: g.name,
+                            avgEnergy: (g.eT / g.count).toFixed(1),
+                            recentEnergy,
+                            recentSat: (recent.reduce((a, b) => a + Number(b.satisfaction), 0) / (recent.length || 1)).toFixed(1),
+                            daysSince: diffDays,
+                            status: status,
+                            priority: priority,
+                            topBarrier: Object.entries(g.barriers)
+                                .filter(([key]) => key.toLowerCase() !== 'none')
+                                .sort((a, b) => b[1] - a[1])[0]?.[0] || '—',
+                            notes: sorted[sorted.length - 1].coachNotes || "",
+                            entries: [...sorted].reverse()
+                        };
+                    });
+
+                    // Final Sort: Priority (1 first), then Alphabetical
+                    return mapped
+                        .filter(c => c.name.includes(this.searchQuery.toLowerCase()))
+                        .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
+                }
+            },
+            methods: {
+                async loadData() {
+                    const r = await (fetch('/all'));
+                    this.rawReflections = await r.json();
+                },
+                getCol(v) { return v <= 2.5 ? '#cf1322' : v >= 4 ? '#389e0d' : '#faad14'; },
+                getTagClass(cat) {
+                    const c = (cat || '').toLowerCase();
+                    if (c.includes('work')) return 'tag-work';
+                    if (c.includes('social')) return 'tag-social';
+                    if (c.includes('physical')) return 'tag-physical';
+                    if (c.includes('internal') || c.includes('mental')) return 'tag-internal';
+                    return 'tag-none';
+                },
+                selectClient(client) {
+                    this.selectedClient = client;
+                    this.$nextTick(() => this.renderChart());
+                },
+                renderChart() {
+                    const ctx = document.getElementById('dualChart').getContext('2d');
+                    if (chartInstance) chartInstance.destroy();
+                    const chartData = [...this.selectedClient.entries].reverse();
+                    chartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.map(e => e.date),
+                            datasets: [
+                                { label: 'Energy', data: chartData.map(e => e.energyLevel), borderColor: '#007bff', tension: 0.3 },
+                                { label: 'Satisfaction', data: chartData.map(e => e.satisfaction), borderColor: '#52c41a', tension: 0.3 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                },
+                async saveNotes() {
+                    await fetch('http://localhost:3000/update-notes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clientId: this.selectedClient.name, notes: this.selectedClient.notes })
+                    });
+                    alert("Strategy Saved");
+                },
+                async deleteClient() {
+                    if (!confirm("Remove client?")) return;
+                    await fetch(`http://localhost:3000/delete/${encodeURIComponent(this.selectedClient.name)}`, { method: 'DELETE' });
+                    this.selectedClient = null;
+                    this.loadData();
+                }
+            },
+            mounted() { this.loadData(); }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
