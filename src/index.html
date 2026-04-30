@@ -327,16 +327,10 @@
                         const recent = sorted.slice(-3);
                         const recentEnergy = (recent.reduce((a, b) => a + Number(b.energyLevel), 0) / (recent.length || 1)).toFixed(1);
 
-                        // Priority Logic: Days since last submission
                         const lastDate = new Date(sorted[sorted.length - 1].date);
                         const today = new Date();
-                        // Calculate the gap (Today minus Last Submission)
                         const diffTime = today - lastDate;
-
-                        // If the number is negative, the date is in the future. 
-                        // We use Math.max(0, ...) to force it to 0 so it doesn't show "203d ago"
                         const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-                        // Status Ranking
 
                         let status = 'healthy';
                         let priority = 3;
@@ -365,7 +359,6 @@
                         };
                     });
 
-                    // Final Sort: Priority (1 first), then Alphabetical
                     return mapped
                         .filter(c => c.name.includes(this.searchQuery.toLowerCase()))
                         .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
@@ -373,6 +366,7 @@
             },
             methods: {
                 async loadData() {
+                    // FIXED: Removed http://localhost:3000
                     const r = await (fetch('/all'));
                     this.rawReflections = await r.json();
                 },
@@ -406,7 +400,8 @@
                     });
                 },
                 async saveNotes() {
-                    await fetch('http://localhost:3000/update-notes', {
+                    // FIXED: Changed to relative path
+                    await fetch('/update-notes', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ clientId: this.selectedClient.name, notes: this.selectedClient.notes })
@@ -415,7 +410,8 @@
                 },
                 async deleteClient() {
                     if (!confirm("Remove client?")) return;
-                    await fetch(`http://localhost:3000/delete/${encodeURIComponent(this.selectedClient.name)}`, { method: 'DELETE' });
+                    // FIXED: Changed to relative path
+                    await fetch(`/delete/${encodeURIComponent(this.selectedClient.name)}`, { method: 'DELETE' });
                     this.selectedClient = null;
                     this.loadData();
                 }
