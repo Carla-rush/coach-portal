@@ -4,7 +4,6 @@ const { Pool } = require('pg');
 
 const app = express();
 
-// Use Railway's assigned port, or default to 3000 for local testing
 const PORT = process.env.PORT || 3000;
 
 const pool = new Pool({
@@ -18,10 +17,26 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('./src'));
 
+// --- ADDED: This is the missing route that fixes the 404 error ---
+app.post('/reflection', async (req: Request, res: Response) => {
+    const { clientId, date, energyLevel, satisfaction, frictionCat, frictionNote } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO reflections ("clientId", "date", "energyLevel", "satisfaction", "frictionCat", "frictionNote") VALUES ($1, $2, $3, $4, $5, $6)',
+            [clientId, date, energyLevel, satisfaction, frictionCat, frictionNote]
+        );
+        res.send({ message: "Success" });
+    } catch (err: any) {
+        console.error("Database Error:", err.message);
+        res.status(500).send(err.message);
+    }
+});
+
 // 1. Get all data from the database
 app.get('/all', async (req: Request, res: Response) => {
     try {
-        const result = await pool.query('SELECT * FROM reflections ORDER BY date DESC');
+        // Updated to use "date" to match your expected table structure
+        const result = await pool.query('SELECT * FROM reflections ORDER BY "date" DESC');
         res.json(result.rows);
     } catch (err: any) {
         console.error("Database Error:", err.message);
@@ -33,7 +48,6 @@ app.get('/all', async (req: Request, res: Response) => {
 app.post('/update-notes', async (req: Request, res: Response) => {
     const { clientId, notes } = req.body;
     try {
-        // This updates the 'coachNotes' column for every row matching that clientId
         await pool.query(
             'UPDATE reflections SET "coachNotes" = $1 WHERE LOWER(TRIM("clientId")) = LOWER(TRIM($2))',
             [notes, clientId]
@@ -52,12 +66,10 @@ app.delete('/delete/:name', async (req: Request, res: Response) => {
             'DELETE FROM reflections WHERE LOWER(TRIM("clientId")) = $1',
             [nameToDelete]
         );
-        console.log(`🗑️ Deleted all records for: ${nameToDelete}`);
         res.send({ message: "Success" });
     } catch (err: any) {
         res.status(500).send(err.message);
     }
 });
 
-// Start the server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
