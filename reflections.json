@@ -1,0 +1,81 @@
+[
+  {
+    "clientId": "carl",
+    "date": "2026-11-19",
+    "wins": "great protein",
+    "energyLevel": 5,
+    "satisfaction": 5,
+    "frictionCat": "None",
+    "frictionNote": "Web Submission",
+    "id": "1777533328902",
+    "coachNotes": "test"
+  },
+  {
+    "clientId": "carl",
+    "date": "2026-11-20",
+    "wins": "ran 5K",
+    "energyLevel": 5,
+    "satisfaction": 4,
+    "frictionCat": "None",
+    "frictionNote": "Web Submission",
+    "id": "1777533441068",
+    "coachNotes": "test"
+  },
+  {
+    "clientId": "carl",
+    "date": "2026-01-11",
+    "wins": "positive self talk",
+    "energyLevel": 2,
+    "satisfaction": 3,
+    "frictionCat": "None",
+    "frictionNote": "Web Submission",
+    "id": "1777533673755",
+    "coachNotes": "test"
+  },
+  {
+    "clientId": "carl",
+    "date": "2026-10-10",
+    "wins": "good bosy image",
+    "energyLevel": 5,
+    "satisfaction": 5,
+    "frictionCat": "Work",
+    "frictionNote": "too many meetings ",
+    "id": "1777534373061",
+    "coachNotes": "test"
+  },
+  {
+    "clientId": "carl",
+    "date": "2026-11-10",
+    "wins": "",
+    "energyLevel": 1,
+    "satisfaction": 1,
+    "frictionCat": "Work",
+    "frictionNote": "didnt take breaks",
+    "id": "1777534535005",
+    "coachNotes": "test"
+  },
+  {
+    "clientId": "carl",
+    "date": "2026-04-30",
+    "wins": "",
+    "energyLevel": 5,
+    "satisfaction": 5,
+    "frictionCat": "None",
+    "frictionNote": "",
+    "pivot": "",
+    "id": "1777536218400",
+    "coachNotes": "test"
+  },
+  {
+    "clientId": "carl",
+    "date": "2026-04-30",
+    "wins": "5k",
+    "energyLevel": 5,
+    "satisfaction": 5,
+    "frictionCat": "Internal",
+    "frictionNote": "mean to self",
+    "pivot": "compassion",
+    "id": "1777536257051",
+    "coachNotes": "test"
+  }
+]

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Reflection Submission</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f4f4f9; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 400px; }
+        input, textarea, select, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 20px; }
+        button:hover { background: #0056b3; }
+        label { font-weight: bold; font-size: 14px; color: #555; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Daily Reflection</h2>
+        <form id="reflectionForm">
+            <label>Full Name</label>
+            <input type="text" id="clientId" placeholder="e.g. Carl Rush" required>
+
+            <label>What were your wins today?</label>
+            <textarea id="wins" placeholder="List what went well..."></textarea>
+
+            <label>Where was the most friction today?</label>
+            <select id="frictionCat">
+                <option value="None">None / Smooth Sailing</option>
+                <option value="Work">Work / Productivity</option>
+                <option value="Social">Social / Boundaries</option>
+                <option value="Health">Physical / Health</option>
+                <option value="Internal">Internal / Mindset (Self-talk)</option>
+                <option value="Finance">Financial Stress</option>
+                <option value="Time">Time Management / Overwhelmed</option>
+            </select>
+
+            <label>Briefly describe the challenge (if any):</label>
+            <textarea id="frictionNote" placeholder="Didn't sleep well, felt drained all day ..."></textarea>
+
+            <!-- Action Plan -->
+            <label>Action Plan: One specific thing to reduce this friction?</label>
+            <input type="text" id="pivot" placeholder="e.g. Set work boundaries, early sleep...">
+
+            <label>Energy Level (1-5)</label>
+            <input type="number" id="energyLevel" min="1" max="5" required>
+
+            <!-- Satisfaction with showing up -->
+            <label>How satisfied are you with how you showed up today? (1-5)</label>
+            <input type="number" id="satisfaction" min="1" max="5" required>
+
+            <button type="submit">Complete Reflection</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('reflectionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Auto-generate today's date
+            const today = new Date().toISOString().split('T')[0];
+
+            const data = {
+                clientId: document.getElementById('clientId').value.trim().toLowerCase(),
+                date: today,
+                wins: document.getElementById('wins').value,
+                energyLevel: Number(document.getElementById('energyLevel').value),
+                satisfaction: Number(document.getElementById('satisfaction').value),
+                frictionCat: document.getElementById('frictionCat').value,
+                frictionNote: document.getElementById('frictionNote').value,
+                pivot: document.getElementById('pivot').value
+            };
+
+            try {
+                // Pointing to your verified endpoint
+                const response = await fetch('http://localhost:3000/reflection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert("Great job! Your reflection has been sent.");
+                    e.target.reset();
+                } else {
+                    alert("Server error. Check your terminal.");
+                }
+            } catch (err) {
+                console.error("Submission failed:", err);
+                alert("Could not connect to the server. Is your node server running?");
+            }
+        });
+    </script>
+</body>
+</html>
