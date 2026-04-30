@@ -1,6 +1,9 @@
 {
   "name": "coach-data-harness",
   "version": "1.0.0",
+  "scripts": {
+    "start": "ts-node src/index.ts"
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^4.19.2",
@@ -14,3 +17,4 @@
     "typescript": "^5.4.5"
   }
 }
+
