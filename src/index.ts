@@ -17,8 +17,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('./src'));
 
-// --- ADDED: This is the missing route that fixes the 404 error ---
-app.post('/reflection', async (req: Request, res: Response) => {
+app.post('/reflections', async (req: Request, res: Response) => {
     const { clientId, date, energyLevel, satisfaction, frictionCat, frictionNote } = req.body;
     try {
         await pool.query(
