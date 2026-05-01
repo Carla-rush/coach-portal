@@ -100,6 +100,7 @@
 
         .card-row {
             display: flex;
+            flex-wrap: wrap;
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -109,6 +110,7 @@
             padding: 20px;
             border-radius: 12px;
             flex: 1;
+            min-width: 200px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
@@ -131,6 +133,15 @@
             border-radius: 12px;
             margin-bottom: 20px;
             height: 250px;
+        }
+
+        .wins-bank-container {
+            width: 100%;
+            background: #e6fffa;
+            border: 1px solid #38b2ac;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
         }
 
         /* COLORFUL FRICTION TAGS */
@@ -248,6 +259,16 @@
             <div class="chart-box"><canvas id="dualChart"></canvas></div>
 
             <div class="card-row">
+                <!-- WINS BANK SECTION (NOW DYNAMIC WITH VUE) -->
+                <div v-if="selectedClient.entries.some(e => e.wins)" class="wins-bank-container">
+                    <h3 style="color: #2c7a7b; margin-top: 0;">🏆 Wins Bank</h3>
+                    <ul style="list-style-type: disc; padding-left: 20px; color: #2c7a7b; font-weight: 500;">
+                        <li v-for="e in selectedClient.entries" v-if="e.wins && e.wins.trim() !== ''" style="margin-bottom: 5px;">
+                            <strong>{{ e.date }}:</strong> {{ e.wins }}
+                        </li>
+                    </ul>
+                </div>
+
                 <div class="card">
                     <h4>Energy</h4>
                     <h2>{{ selectedClient.recentEnergy }}/5</h2>
@@ -366,7 +387,6 @@
             },
             methods: {
                 async loadData() {
-                    // FIXED: Removed http://localhost:3000
                     const r = await (fetch('/all'));
                     this.rawReflections = await r.json();
                 },
@@ -383,6 +403,7 @@
                     this.selectedClient = client;
                     this.$nextTick(() => this.renderChart());
                 },
+                
                 renderChart() {
                     const ctx = document.getElementById('dualChart').getContext('2d');
                     if (chartInstance) chartInstance.destroy();
@@ -400,7 +421,6 @@
                     });
                 },
                 async saveNotes() {
-                    // FIXED: Changed to relative path
                     await fetch('/update-notes', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -410,7 +430,6 @@
                 },
                 async deleteClient() {
                     if (!confirm("Remove client?")) return;
-                    // FIXED: Changed to relative path
                     await fetch(`/delete/${encodeURIComponent(this.selectedClient.name)}`, { method: 'DELETE' });
                     this.selectedClient = null;
                     this.loadData();

@@ -18,11 +18,12 @@ app.use(express.json());
 app.use(express.static('./src'));
 
 app.post('/reflections', async (req: Request, res: Response) => {
-    const { clientId, date, energyLevel, satisfaction, frictionCat, frictionNote } = req.body;
+    const { clientId, date, energyLevel, satisfaction, frictionCat, frictionNote, wins } = req.body;
     try {
         await pool.query(
-            'INSERT INTO reflections ("clientId", "date", "energyLevel", "satisfaction", "frictionCat", "frictionNote") VALUES ($1, $2, $3, $4, $5, $6)',
-            [clientId, date, energyLevel, satisfaction, frictionCat, frictionNote]
+            // 2. Added "wins" to the INSERT columns and $7 to the values
+            'INSERT INTO reflections ("clientId", "date", "energyLevel", "satisfaction", "frictionCat", "frictionNote", "wins") VALUES ($1, $2, $3, $4, $5, $6, $7)',
+            [clientId, date, energyLevel, satisfaction, frictionCat, frictionNote, wins]
         );
         res.send({ message: "Success" });
     } catch (err: any) {
