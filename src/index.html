@@ -216,8 +216,9 @@
                 <div style="flex: 1;">
                     <div style="text-transform: capitalize; font-weight: bold; font-size: 14px;">{{ client.name }}</div>
 
+                    <!-- FIXED: Added Number() conversion to handle string timestamps from Redis -->
                     <div v-if="client.lastSeen" style="font-size: 10px; color: #52c41a; margin-bottom: 2px;">
-                        Active: {{ new Date(client.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
+                        Active: {{ new Date(Number(client.lastSeen)).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
                     </div>
 
                     <div class="days-ago">{{ client.daysSince === 0 ? 'Today' : client.daysSince + 'd ago' }}</div>
@@ -241,7 +242,6 @@
             <div class="chart-box"><canvas id="dualChart"></canvas></div>
 
             <div class="card-row">
-                <!-- SAFE WINS BANK: Handles undefined/null entries -->
                 <div v-if="selectedClient && selectedClient.entries && selectedClient.entries.some(e => e && e.wins && String(e.wins).trim() !== '')"
                     class="wins-bank-container">
                     <h3 style="color: #2c7a7b; margin-top: 0;">🏆 Wins Bank</h3>
@@ -316,11 +316,10 @@
             computed: {
                 filteredClients() {
                     const groups = {};
-                    // Safety check on raw data
                     if (!this.rawReflections || !Array.isArray(this.rawReflections)) return [];
 
                     this.rawReflections.forEach(r => {
-                        if (!r || !r.clientId) return; // Skip broken rows
+                        if (!r || !r.clientId) return;
                         const name = r.clientId.toLowerCase().trim();
                         if (!groups[name]) groups[name] = { name, eT: 0, sT: 0, count: 0, entries: [], barriers: {} };
                         groups[name].eT += Number(r.energyLevel || 0);
@@ -336,7 +335,12 @@
                         const recent = sorted.slice(-3);
                         const recentEnergy = (recent.reduce((a, b) => a + Number(b.energyLevel || 0), 0) / (recent.length || 1)).toFixed(1);
 
-                        const lastSeenTime = g.entries[0].lastSeen || new Date(sorted[sorted.length - 1].date).getTime();
+                        // FIXED: Smarter check to find the newest lastSeen timestamp across all entries
+                        const timestamps = g.entries.map(e => Number(e.lastSeen)).filter(t => !isNaN(t) && t > 0);
+                        const lastSeenTime = timestamps.length > 0 
+                            ? Math.max(...timestamps) 
+                            : new Date(sorted[sorted.length - 1].date).getTime();
+
                         const today = Date.now();
                         const diffDays = Math.max(0, Math.floor((today - lastSeenTime) / (1000 * 60 * 60 * 24)));
 
@@ -355,6 +359,7 @@
                             recentEnergy,
                             recentSat: (recent.reduce((a, b) => a + Number(b.satisfaction || 0), 0) / (recent.length || 1)).toFixed(1),
                             daysSince: diffDays,
+                            lastSeen: lastSeenTime, // Pass the detected time through to the sidebar
                             status: status,
                             priority: priority,
                             topBarrier: Object.entries(g.barriers)
@@ -399,7 +404,6 @@
                     const ctx = canvas.getContext('2d');
                     if (chartInstance) chartInstance.destroy();
 
-                    // Filter out any broken entries before mapping to chart
                     const chartData = (this.selectedClient.entries || []).filter(e => e && e.date).reverse();
                     
                     chartInstance = new Chart(ctx, {
