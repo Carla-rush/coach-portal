@@ -238,8 +238,19 @@
                 :class="['client-row', { 'active-client': selectedClient?.name === client.name }]">
 
                 <div style="flex: 1;">
+                    <!-- 1. Client Name -->
                     <div style="text-transform: capitalize; font-weight: bold; font-size: 14px;">{{ client.name }}</div>
+
+                    <!-- 2. REDIS CHECK -->
+                    <div v-if="client.lastSeen" style="font-size: 10px; color: #52c41a; margin-bottom: 2px;">
+                        Active: {{ new Date(client.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                        }}
+                    </div>
+
+                    <!-- 3. Existing Days Ago -->
                     <div class="days-ago">{{ client.daysSince === 0 ? 'Today' : client.daysSince + 'd ago' }}</div>
+
+                    <!-- 4. Energy Bar -->
                     <div class="energy-bar-bg">
                         <div class="energy-bar-fill"
                             :style="{ width: (client.recentEnergy * 20) + '%', background: getCol(client.recentEnergy) }">
@@ -259,11 +270,13 @@
             <div class="chart-box"><canvas id="dualChart"></canvas></div>
 
             <div class="card-row">
-                <!-- WINS BANK SECTION (NOW DYNAMIC WITH VUE) -->
-                <div v-if="selectedClient.entries.some(e => e.wins)" class="wins-bank-container">
+                <div v-if="selectedClient.entries.some(e => e.wins && e.wins.trim() !== '')"
+                    class="wins-bank-container">
                     <h3 style="color: #2c7a7b; margin-top: 0;">🏆 Wins Bank</h3>
                     <ul style="list-style-type: disc; padding-left: 20px; color: #2c7a7b; font-weight: 500;">
-                        <li v-for="e in selectedClient.entries" v-if="e.wins && e.wins.trim() !== ''" style="margin-bottom: 5px;">
+                        <!-- Filter out empty strings right in the loop -->
+                        <li v-for="e in selectedClient.entries" v-if="e.wins && e.wins.trim() !== ''"
+                            style="margin-bottom: 5px;">
                             <strong>{{ e.date }}:</strong> {{ e.wins }}
                         </li>
                     </ul>
@@ -331,6 +344,7 @@
             data() { return { searchQuery: '', rawReflections: [], selectedClient: null } },
             computed: {
                 filteredClients() {
+
                     const groups = {};
                     this.rawReflections.forEach(r => {
                         const name = r.clientId.toLowerCase().trim();
@@ -348,10 +362,10 @@
                         const recent = sorted.slice(-3);
                         const recentEnergy = (recent.reduce((a, b) => a + Number(b.energyLevel), 0) / (recent.length || 1)).toFixed(1);
 
-                        const lastDate = new Date(sorted[sorted.length - 1].date);
-                        const today = new Date();
-                        const diffTime = today - lastDate;
-                        const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                        // Use Redis LastSeen if available, otherwise fallback to DB date
+                        const lastSeenTime = g.entries[0].lastSeen || new Date(sorted[sorted.length - 1].date).getTime();
+                        const today = Date.now();
+                        const diffDays = Math.max(0, Math.floor((today - lastSeenTime) / (1000 * 60 * 60 * 24)));
 
                         let status = 'healthy';
                         let priority = 3;
@@ -403,7 +417,7 @@
                     this.selectedClient = client;
                     this.$nextTick(() => this.renderChart());
                 },
-                
+
                 renderChart() {
                     const ctx = document.getElementById('dualChart').getContext('2d');
                     if (chartInstance) chartInstance.destroy();
