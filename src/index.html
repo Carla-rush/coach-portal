@@ -144,7 +144,6 @@
             margin-bottom: 20px;
         }
 
-        /* COLORFUL FRICTION TAGS */
         .tag {
             padding: 4px 10px;
             border-radius: 20px;
@@ -154,30 +153,11 @@
             text-transform: uppercase;
         }
 
-        .tag-work {
-            background: #d46b08;
-            border: 1px solid #ffbb96;
-        }
-
-        .tag-social {
-            background: #096dd9;
-            border: 1px solid #91d5ff;
-        }
-
-        .tag-physical {
-            background: #cf1322;
-            border: 1px solid #ffa39e;
-        }
-
-        .tag-mental {
-            background: #722ed1;
-            border: 1px solid #d3adf7;
-        }
-
-        .tag-internal {
-            background: #531dab;
-            border: 1px solid #d3adf7;
-        }
+        .tag-work { background: #d46b08; border: 1px solid #ffbb96; }
+        .tag-social { background: #096dd9; border: 1px solid #91d5ff; }
+        .tag-physical { background: #cf1322; border: 1px solid #ffa39e; }
+        .tag-mental { background: #722ed1; border: 1px solid #d3adf7; }
+        .tag-internal { background: #531dab; border: 1px solid #d3adf7; }
 
         .tactical-notes {
             background: #fffbe6;
@@ -204,8 +184,7 @@
             overflow: hidden;
         }
 
-        th,
-        td {
+        th, td {
             padding: 15px;
             text-align: left;
             border-bottom: 1px solid #eee;
@@ -222,10 +201,7 @@
             border-radius: 4px;
         }
 
-        .delete-btn:hover {
-            border-color: #ff4d4f;
-            color: #ff4d4f;
-        }
+        .delete-btn:hover { border-color: #ff4d4f; color: #ff4d4f; }
     </style>
 </head>
 
@@ -234,23 +210,18 @@
         <div id="sidebar">
             <input type="text" v-model="searchQuery" class="search-input" placeholder="Search...">
 
-            <div v-for="client in filteredClients" @click="selectClient(client)"
+            <div v-for="client in filteredClients" :key="client.name" @click="selectClient(client)"
                 :class="['client-row', { 'active-client': selectedClient?.name === client.name }]">
 
                 <div style="flex: 1;">
-                    <!-- 1. Client Name -->
                     <div style="text-transform: capitalize; font-weight: bold; font-size: 14px;">{{ client.name }}</div>
 
-                    <!-- 2. REDIS CHECK -->
                     <div v-if="client.lastSeen" style="font-size: 10px; color: #52c41a; margin-bottom: 2px;">
-                        Active: {{ new Date(client.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                        }}
+                        Active: {{ new Date(client.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
                     </div>
 
-                    <!-- 3. Existing Days Ago -->
                     <div class="days-ago">{{ client.daysSince === 0 ? 'Today' : client.daysSince + 'd ago' }}</div>
 
-                    <!-- 4. Energy Bar -->
                     <div class="energy-bar-bg">
                         <div class="energy-bar-fill"
                             :style="{ width: (client.recentEnergy * 20) + '%', background: getCol(client.recentEnergy) }">
@@ -270,15 +241,16 @@
             <div class="chart-box"><canvas id="dualChart"></canvas></div>
 
             <div class="card-row">
-                <div v-if="selectedClient && selectedClient.entries && selectedClient.entries.some(e => e && e.wins && typeof e.wins === 'string' && e.wins.trim() !== '')"
+                <!-- SAFE WINS BANK: Handles undefined/null entries -->
+                <div v-if="selectedClient && selectedClient.entries && selectedClient.entries.some(e => e && e.wins && String(e.wins).trim() !== '')"
                     class="wins-bank-container">
                     <h3 style="color: #2c7a7b; margin-top: 0;">🏆 Wins Bank</h3>
                     <ul style="list-style-type: disc; padding-left: 20px; color: #2c7a7b; font-weight: 500;">
-                        <!-- Filter out empty strings right in the loop -->
-                        <li v-for="e in selectedClient.entries" v-if="e.wins && e.wins.trim() !== ''"
-                            style="margin-bottom: 5px;">
-                            <strong>{{ e.date }}:</strong> {{ e.wins }}
-                        </li>
+                        <template v-for="e in selectedClient.entries">
+                           <li v-if="e && e.wins && String(e.wins).trim() !== ''" style="margin-bottom: 5px;">
+                               <strong>{{ e.date }}:</strong> {{ e.wins }}
+                           </li>
+                        </template>
                     </ul>
                 </div>
 
@@ -301,8 +273,7 @@
 
             <div class="tactical-notes">
                 <h3>📝 Coach Plan</h3>
-                <textarea v-model="selectedClient.notes"
-                    style="width:100%; height:80px; margin-bottom:10px;"></textarea>
+                <textarea v-model="selectedClient.notes" style="width:100%; height:80px; margin-bottom:10px;"></textarea>
                 <button class="save-btn" @click="saveNotes">Update Strategy</button>
             </div>
 
@@ -317,7 +288,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="e in selectedClient.entries">
+                    <tr v-for="e in selectedClient.entries" v-if="e">
                         <td>{{ e.date }}</td>
                         <td><strong>{{ e.energyLevel }}</strong></td>
                         <td>{{ e.satisfaction }}</td>
@@ -344,13 +315,16 @@
             data() { return { searchQuery: '', rawReflections: [], selectedClient: null } },
             computed: {
                 filteredClients() {
-
                     const groups = {};
+                    // Safety check on raw data
+                    if (!this.rawReflections || !Array.isArray(this.rawReflections)) return [];
+
                     this.rawReflections.forEach(r => {
+                        if (!r || !r.clientId) return; // Skip broken rows
                         const name = r.clientId.toLowerCase().trim();
                         if (!groups[name]) groups[name] = { name, eT: 0, sT: 0, count: 0, entries: [], barriers: {} };
-                        groups[name].eT += Number(r.energyLevel);
-                        groups[name].sT += Number(r.satisfaction);
+                        groups[name].eT += Number(r.energyLevel || 0);
+                        groups[name].sT += Number(r.satisfaction || 0);
                         groups[name].count++;
                         groups[name].entries.push(r);
                         const b = r.frictionCat || 'None';
@@ -360,9 +334,8 @@
                     const mapped = Object.values(groups).map(g => {
                         const sorted = g.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
                         const recent = sorted.slice(-3);
-                        const recentEnergy = (recent.reduce((a, b) => a + Number(b.energyLevel), 0) / (recent.length || 1)).toFixed(1);
+                        const recentEnergy = (recent.reduce((a, b) => a + Number(b.energyLevel || 0), 0) / (recent.length || 1)).toFixed(1);
 
-                        // Use Redis LastSeen if available, otherwise fallback to DB date
                         const lastSeenTime = g.entries[0].lastSeen || new Date(sorted[sorted.length - 1].date).getTime();
                         const today = Date.now();
                         const diffDays = Math.max(0, Math.floor((today - lastSeenTime) / (1000 * 60 * 60 * 24)));
@@ -371,18 +344,16 @@
                         let priority = 3;
 
                         if (diffDays >= 3 || Number(recentEnergy) <= 2.0) {
-                            status = 'critical';
-                            priority = 1;
+                            status = 'critical'; priority = 1;
                         } else if (diffDays >= 1 || Number(recentEnergy) <= 3.5) {
-                            status = 'warning';
-                            priority = 2;
+                            status = 'warning'; priority = 2;
                         }
 
                         return {
                             name: g.name,
                             avgEnergy: (g.eT / g.count).toFixed(1),
                             recentEnergy,
-                            recentSat: (recent.reduce((a, b) => a + Number(b.satisfaction), 0) / (recent.length || 1)).toFixed(1),
+                            recentSat: (recent.reduce((a, b) => a + Number(b.satisfaction || 0), 0) / (recent.length || 1)).toFixed(1),
                             daysSince: diffDays,
                             status: status,
                             priority: priority,
@@ -401,8 +372,13 @@
             },
             methods: {
                 async loadData() {
-                    const r = await (fetch('/all'));
-                    this.rawReflections = await r.json();
+                    try {
+                        const r = await fetch('/all');
+                        const data = await r.json();
+                        this.rawReflections = Array.isArray(data) ? data : [];
+                    } catch (e) {
+                        console.error("Failed to load reflections", e);
+                    }
                 },
                 getCol(v) { return v <= 2.5 ? '#cf1322' : v >= 4 ? '#389e0d' : '#faad14'; },
                 getTagClass(cat) {
@@ -417,11 +393,15 @@
                     this.selectedClient = client;
                     this.$nextTick(() => this.renderChart());
                 },
-
                 renderChart() {
-                    const ctx = document.getElementById('dualChart').getContext('2d');
+                    const canvas = document.getElementById('dualChart');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
                     if (chartInstance) chartInstance.destroy();
-                    const chartData = [...this.selectedClient.entries].reverse();
+
+                    // Filter out any broken entries before mapping to chart
+                    const chartData = (this.selectedClient.entries || []).filter(e => e && e.date).reverse();
+                    
                     chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -453,5 +433,4 @@
         }).mount('#app');
     </script>
 </body>
-
 </html>
