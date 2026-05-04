@@ -5,9 +5,8 @@ const Redis = require('ioredis');
 
 const app = express();
 
-// Railway-specific Redis connection string with IPv6 support (?family=0)
-const redisUrl = process.env.REDIS_URL ? `${process.env.REDIS_URL}?family=0` : 'redis://localhost:6379';
-const redis = new Redis(redisUrl);
+const redisUrl = process.env.REDIS_URL || process.env.REDIS_PUBLIC_URL || 'redis://localhost:6379';
+const redis = new Redis(`${redisUrl}${redisUrl.includes('?') ? '' : '?family=0'}`);
 
 const PORT = process.env.PORT || 3000;
 
