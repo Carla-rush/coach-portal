@@ -270,7 +270,7 @@
             <div class="chart-box"><canvas id="dualChart"></canvas></div>
 
             <div class="card-row">
-                <div v-if="selectedClient.entries.some(e => e.wins && e.wins.trim() !== '')"
+                <div v-if="selectedClient.entries.some(e && e.wins && typeof e.wins === 'string' && e.wins.trim() !== '')
                     class="wins-bank-container">
                     <h3 style="color: #2c7a7b; margin-top: 0;">🏆 Wins Bank</h3>
                     <ul style="list-style-type: disc; padding-left: 20px; color: #2c7a7b; font-weight: 500;">
