@@ -1,20 +1,20 @@
-export type FrictionCategory = 
-  | 'Social/Environment' 
-  | 'Work/Schedule' 
-  | 'Mental/Emotional' 
-  | 'Physical/Health' 
-  | 'Logistical/Prep' 
-  | 'Other' 
-  | 'None';
+export type FrictionCategory =
+  | 'None'
+  | 'Work'
+  | 'Social'
+  | 'Health'
+  | 'Internal'
+  | 'Finance'
+  | 'Time';
 
 export interface DailyReflection {
-    id?: string;             
-    clientId: string;        
-    date: string;            
-    wins: string;            
-    frictionCat: FrictionCategory; 
-    frictionNote: string;    
-    planAlignment: number;   
-    energyLevel: number;     
-    satisfaction: number;    
+    id?: string;
+    clientId: string;
+    date: string;
+    wins: string;
+    pivot: string;
+    frictionCat: FrictionCategory;
+    frictionNote: string;
+    energyLevel: number;
+    satisfaction: number;
 }

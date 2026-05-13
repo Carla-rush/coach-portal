@@ -158,6 +158,8 @@
         .tag-physical { background: #cf1322; border: 1px solid #ffa39e; }
         .tag-mental { background: #722ed1; border: 1px solid #d3adf7; }
         .tag-internal { background: #531dab; border: 1px solid #d3adf7; }
+        .tag-finance { background: #08979c; border: 1px solid #87e8de; }
+        .tag-time { background: #7c3aed; border: 1px solid #c4b5fd; }
 
         .tactical-notes {
             background: #fffbe6;
@@ -216,7 +218,6 @@
                 <div style="flex: 1;">
                     <div style="text-transform: capitalize; font-weight: bold; font-size: 14px;">{{ client.name }}</div>
 
-                    <!-- FIXED: Added Number() conversion to handle string timestamps from Redis -->
                     <div v-if="client.lastSeen" style="font-size: 10px; color: #52c41a; margin-bottom: 2px;">
                         Active: {{ new Date(Number(client.lastSeen)).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
                     </div>
@@ -335,11 +336,9 @@
                         const recent = sorted.slice(-3);
                         const recentEnergy = (recent.reduce((a, b) => a + Number(b.energyLevel || 0), 0) / (recent.length || 1)).toFixed(1);
 
-                        // FIXED: Smarter check to find the newest lastSeen timestamp across all entries
                         const timestamps = g.entries.map(e => Number(e.lastSeen)).filter(t => !isNaN(t) && t > 0);
-                        const lastSeenTime = timestamps.length > 0 
-                            ? Math.max(...timestamps) 
-                            : new Date(sorted[sorted.length - 1].date).getTime();
+                        const lastSeen = timestamps.length > 0 ? Math.max(...timestamps) : null;
+                        const lastSeenTime = lastSeen ?? new Date(sorted[sorted.length - 1].date).getTime();
 
                         const today = Date.now();
                         const diffDays = Math.max(0, Math.floor((today - lastSeenTime) / (1000 * 60 * 60 * 24)));
@@ -359,7 +358,7 @@
                             recentEnergy,
                             recentSat: (recent.reduce((a, b) => a + Number(b.satisfaction || 0), 0) / (recent.length || 1)).toFixed(1),
                             daysSince: diffDays,
-                            lastSeen: lastSeenTime, // Pass the detected time through to the sidebar
+                            lastSeen: lastSeen,
                             status: status,
                             priority: priority,
                             topBarrier: Object.entries(g.barriers)
@@ -390,9 +389,11 @@
                     const c = (cat || '').toLowerCase();
                     if (c.includes('work')) return 'tag-work';
                     if (c.includes('social')) return 'tag-social';
-                    if (c.includes('physical')) return 'tag-physical';
+                    if (c.includes('physical') || c === 'health') return 'tag-physical';
                     if (c.includes('internal') || c.includes('mental')) return 'tag-internal';
-                    return 'tag-none';
+                    if (c === 'finance') return 'tag-finance';
+                    if (c === 'time') return 'tag-time';
+                    return 'tag-work';
                 },
                 selectClient(client) {
                     this.selectedClient = client;

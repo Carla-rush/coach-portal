@@ -22,16 +22,13 @@ app.use(express.json());
 app.use(express.static('./src'));
 
 app.post('/reflections', async (req: Request, res: Response) => {
-    const { clientId, date, energyLevel, satisfaction, frictionCat, frictionNote, wins } = req.body;
+    const { clientId, date, energyLevel, satisfaction, frictionCat, frictionNote, wins, pivot } = req.body;
     try {
-        // 1. Permanent Storage in Postgres
         await pool.query(
-            'INSERT INTO reflections ("clientId", "date", "energyLevel", "satisfaction", "frictionCat", "frictionNote", "wins") VALUES ($1, $2, $3, $4, $5, $6, $7)',
-            [clientId, date, energyLevel, satisfaction, frictionCat, frictionNote, wins]
+            'INSERT INTO reflections ("clientId", "date", "energyLevel", "satisfaction", "frictionCat", "frictionNote", "wins", "pivot") VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+            [clientId, date, energyLevel, satisfaction, frictionCat, frictionNote, wins, pivot]
         );
 
-        // 2. Real-time "Last Seen" Ping in Redis
-        // We normalize the key to lowercase to avoid "Adam" vs "adam" issues
         await redis.set(`last_seen:${clientId.toLowerCase().trim()}`, Date.now());
 
         res.send({ message: "Success" });
@@ -46,7 +43,6 @@ app.get('/all', async (req: Request, res: Response) => {
         const result = await pool.query('SELECT * FROM reflections ORDER BY "date" DESC');
         const rows = result.rows;
 
-        // 3. Attach the Redis "Last Seen" data to each record
         const reflectionsWithLiveStatus = await Promise.all(rows.map(async (row: any) => {
             const lastSeen = await redis.get(`last_seen:${row.clientId.toLowerCase().trim()}`);
             return { 
@@ -78,12 +74,10 @@ app.post('/update-notes', async (req: Request, res: Response) => {
 app.delete('/delete/:name', async (req: Request, res: Response) => {
     const nameToDelete = req.params.name.toLowerCase().trim();
     try {
-        // Clean up Postgres
         await pool.query(
             'DELETE FROM reflections WHERE LOWER(TRIM("clientId")) = $1',
             [nameToDelete]
         );
-        // Clean up Redis too so the "Last Seen" doesn't linger
         await redis.del(`last_seen:${nameToDelete}`);
 
         res.send({ message: "Success" });
